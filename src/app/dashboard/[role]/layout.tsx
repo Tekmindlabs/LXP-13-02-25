@@ -1,8 +1,14 @@
-import { use } from 'react';
-import { redirect } from "next/navigation";
+import { redirect } from "next/dist/client/components/navigation";
 import { getServerAuthSession } from "@/server/auth";
 import { SidebarNav } from "@/components/dashboard/sidebar-nav";
 import SuperAdminSidebar from "@/components/dashboard/roles/super-admin/layout/SuperAdminSidebar";
+
+interface LayoutProps {
+	children: React.ReactNode;
+	params: {
+		role: string;
+	};
+}
 
 const superAdminNavItems = [
 	{
@@ -175,17 +181,15 @@ const studentNavItems = [
 export default async function RoleLayout({
 	children,
 	params,
-}: {
-	children: React.ReactNode;
-	params: { role: string };
-}) {
+}: LayoutProps) {
+
 	const session = await getServerAuthSession();
 
 	if (!session) {
 		redirect("/auth/signin");
 	}
 
-	const userRoles = session.user.roles.map((r) => r.toLowerCase());
+	const userRoles = session?.user?.roles?.map((r) => r.toLowerCase()) ?? [];
 	const currentRole = params.role.toLowerCase();
 
 	if (!currentRole || !userRoles.includes(currentRole)) {

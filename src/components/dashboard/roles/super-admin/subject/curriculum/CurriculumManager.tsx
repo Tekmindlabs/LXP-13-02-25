@@ -64,7 +64,7 @@ export const CurriculumManager: React.FC<{ subjectId: string }> = ({ subjectId }
 	};
 
 	return (
-		<div className="flex flex-col lg:flex-row min-h-[calc(100vh-10rem)]">
+		<div className="flex flex-col lg:flex-row h-full">
 			<div className="lg:hidden w-full mb-4 px-4">
 				<Sheet open={isSheetOpen} onOpenChange={handleSheetOpenChange}>
 					<SheetTrigger asChild>
@@ -83,17 +83,17 @@ export const CurriculumManager: React.FC<{ subjectId: string }> = ({ subjectId }
 				</Sheet>
 			</div>
 
-			<div className="hidden lg:block w-80 border-r min-h-full overflow-auto">
+			<div className="hidden lg:block w-80 border-r overflow-y-auto">
 				<CurriculumTree 
 					subjectId={subjectId}
 					onNodeSelect={handleNodeSelect}
 				/>
 			</div>
 
-			<div className="flex-1 px-4 lg:px-6">
+			<div className="flex-1 flex flex-col overflow-hidden">
 				{selectedNode && !showNodeEditor && (
-					<div className="space-y-4">
-						<div className="flex items-center gap-2 border-b pb-4">
+					<div className="flex flex-col h-full">
+						<div className="flex items-center gap-2 border-b pb-4 px-4 lg:px-6">
 							<Button
 								variant="ghost"
 								size="sm"
@@ -105,7 +105,7 @@ export const CurriculumManager: React.FC<{ subjectId: string }> = ({ subjectId }
 							<h2 className="text-lg font-semibold">{selectedNode.title}</h2>
 						</div>
 
-						<div className="flex gap-2 border-b pb-4 overflow-x-auto">
+						<div className="flex gap-2 border-b pb-4 px-4 lg:px-6 overflow-x-auto">
 							<Button
 								variant={activeView === 'content' ? 'secondary' : 'ghost'}
 								onClick={() => setActiveView('content')}
@@ -129,7 +129,7 @@ export const CurriculumManager: React.FC<{ subjectId: string }> = ({ subjectId }
 							</Button>
 						</div>
 
-						<div className="min-h-[400px]">
+						<div className="flex-1 overflow-y-auto px-4 lg:px-6 py-4">
 							{activeView === 'resources' && <ResourceManager nodeId={selectedNode.id} />}
 							{activeView === 'activities' && <ActivityManager nodeId={selectedNode.id} />}
 						</div>
@@ -137,7 +137,7 @@ export const CurriculumManager: React.FC<{ subjectId: string }> = ({ subjectId }
 				)}
 
 				{!selectedNode && (
-					<div className="flex h-[400px] items-center justify-center text-muted-foreground p-4 text-center">
+					<div className="flex h-full items-center justify-center text-muted-foreground p-4 text-center">
 						{renderContent()}
 					</div>
 				)}

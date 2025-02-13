@@ -64,3 +64,69 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* TipTap Editor Styles */
+.tiptap {
+  @apply min-h-[500px] outline-none;
+}
+
+.tiptap p.is-editor-empty:first-child::before {
+  @apply text-muted-foreground;
+  content: attr(data-placeholder);
+  float: left;
+  pointer-events: none;
+  height: 0;
+}
+
+.tiptap h1 {
+  @apply text-3xl font-bold mb-4;
+}
+
+.tiptap h2 {
+  @apply text-2xl font-bold mb-3;
+}
+
+.tiptap h3 {
+  @apply text-xl font-bold mb-2;
+}
+
+.tiptap ul {
+  @apply list-disc pl-6 mb-4;
+}
+
+.tiptap ol {
+  @apply list-decimal pl-6 mb-4;
+}
+
+.tiptap blockquote {
+  @apply border-l-4 border-muted pl-4 italic my-4;
+}
+
+/* Novel Editor Styles */
+.novel-prose-lg {
+  @apply text-lg leading-7;
+}
+
+.novel-prose {
+  @apply prose prose-sm sm:prose lg:prose-lg xl:prose-xl dark:prose-invert;
+}
+
+.novel-editor {
+  @apply min-h-[500px] w-full outline-none;
+}
+
+.novel-editor-content {
+  @apply px-4 py-3;
+}
+
+.novel-menu-bar {
+  @apply border-b bg-background px-4 py-2;
+}
+
+.novel-menu-item {
+  @apply inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground;
+}
+
+.novel-menu-item.is-active {
+  @apply bg-accent text-accent-foreground;
+}

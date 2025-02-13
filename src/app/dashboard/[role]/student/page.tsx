@@ -1,16 +1,17 @@
 'use client';
 
-import { use } from 'react';
+import { useRouter } from "next/navigation";
 import { StudentManagement } from "@/components/dashboard/roles/super-admin/student/StudentManagement";
 
-type PageProps = {
+interface PageProps {
 	params: {
 		role: string;
 	};
-};
+}
 
 export default function StudentPage({ params }: PageProps) {
-	const { role } = use(params as PageProps['params']);
+	const { role } = params;
+	const router = useRouter();
 
 	return (
 		<div className="container mx-auto py-6">

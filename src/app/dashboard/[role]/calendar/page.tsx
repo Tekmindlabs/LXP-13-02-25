@@ -1,8 +1,8 @@
 'use client';
 
-import { use } from 'react';
 import { CalendarView } from '@/components/dashboard/calendar/CalendarView';
 import { api } from '@/trpc/react';
+import { ViewEvent } from '@/types/calendar';
 
 interface PageProps {
 	params: {
@@ -11,20 +11,25 @@ interface PageProps {
 }
 
 export default function CalendarPage({ params }: PageProps) {
-	const { role } = use(params as PageProps['params']);
+	const { role } = params;
 	
-	const { data: events = [] } = api.calendar.getEvents.useQuery({
-		level: role,
-		status: 'ACTIVE'
+	const { data: calendarEvents = [] } = api.calendar.getEvents.useQuery({
+		entityType: 'class',
+		entityId: role
 	});
 
+	const events: ViewEvent[] = calendarEvents.map(event => ({
+		id: event.id,
+		title: event.title,
+		start: event.startDate,
+		end: event.endDate,
+		type: event.status,
+		entityId: event.classId || event.classGroupId || '',
+	}));
+
 	return (
-		<div className="container mx-auto py-6">
-			<CalendarView
-				entityType={role as 'class' | 'class_group' | 'timetable'}
-				entityId={role}
-				events={events}
-			/>
+		<div className="container mx-auto py-8">
+			<CalendarView events={events} />
 		</div>
 	);
 }

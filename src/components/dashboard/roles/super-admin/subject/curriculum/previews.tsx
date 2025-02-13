@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { FileIcon } from "lucide-react";
+import { FileIcon, Clock, BookOpen } from "lucide-react";
 import { 
 	CurriculumResource, 
 	CurriculumActivity,
@@ -7,7 +7,8 @@ import {
 	QuizContent,
 	AssignmentContent,
 	DiscussionContent,
-	ProjectContent
+	ProjectContent,
+	ReadingContent
 } from "@/types/curriculum";
 
 // Resource Preview Components
@@ -20,6 +21,35 @@ export const VideoPreview: React.FC<{url: string}> = ({url}) => (
 			allowFullScreen
 		/>
 	</div>
+);
+
+export const ReadingPreview: React.FC<{content: ReadingContent}> = ({content}) => (
+	<Card>
+		<CardContent className="p-4">
+			<div className="space-y-4">
+				<div 
+					className="prose prose-lg max-w-none dark:prose-invert focus:outline-none" 
+					dangerouslySetInnerHTML={{ __html: content.content }} 
+				/>
+				<div className="flex items-center gap-4 text-sm text-muted-foreground mt-4 pt-4 border-t">
+					<div className="flex items-center gap-1">
+						<Clock className="h-4 w-4" />
+						<span>{content.estimatedReadingTime} min read</span>
+					</div>
+					{content.references && content.references.length > 0 && (
+						<div className="flex flex-col gap-1">
+							<span className="font-medium">References:</span>
+							<ul className="list-disc pl-4">
+								{content.references.map((ref, i) => (
+									<li key={i}>{ref}</li>
+								))}
+							</ul>
+						</div>
+					)}
+				</div>
+			</div>
+		</CardContent>
+	</Card>
 );
 
 export const LinkPreview: React.FC<{url: string}> = ({url}) => (
@@ -63,7 +93,7 @@ export const QuizPreview: React.FC<{content: QuizContent}> = ({content}) => (
 export const AssignmentPreview: React.FC<{content: AssignmentContent}> = ({content}) => (
 	<Card>
 		<CardContent className="p-4">
-			<div className="prose max-w-none">
+			<div className="prose prose-lg max-w-none dark:prose-invert focus:outline-none">
 				<h3>Instructions</h3>
 				<div dangerouslySetInnerHTML={{ __html: content.instructions }} />
 			</div>

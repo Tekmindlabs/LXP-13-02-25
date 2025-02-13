@@ -6,13 +6,13 @@ import { api } from "@/utils/api";
 import { DataTable } from "@/components/ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { ActivityType } from "@/types/class-activity";
-import { use } from 'react';
 
 interface Props {
-	params: Promise<{
+	params: {
 		role: string;
-	}>;
+	};
 }
+
 
 type Activity = {
 	id: string;
@@ -37,8 +37,8 @@ function formatDate(date: Date | null): string {
 
 export default function ClassActivityPage({ params }: Props) {
 	const router = useRouter();
-	const resolvedParams = use(params);
 	const { data: activities, isLoading } = api.classActivity.getAll.useQuery({}, {
+
 		select: (data) => data.map(activity => ({
 			id: activity.id,
 			title: activity.title,
@@ -88,7 +88,7 @@ export default function ClassActivityPage({ params }: Props) {
 			cell: ({ row }) => (
 				<Button
 					variant="outline"
-					onClick={() => router.push(`/dashboard/${resolvedParams.role}/class-activity/${row.original.id}/edit`)}
+					onClick={() => router.push(`/dashboard/${params.role}/class-activity/${row.original.id}/edit`)}
 				>
 					Edit
 				</Button>
@@ -101,7 +101,7 @@ export default function ClassActivityPage({ params }: Props) {
 			<div className="flex justify-between items-center mb-6">
 				<h1 className="text-2xl font-bold">Class Activities</h1>
 				<Button 
-					onClick={() => router.push(`/dashboard/${resolvedParams.role}/class-activity/create`)}
+					onClick={() => router.push(`/dashboard/${params.role}/class-activity/create`)}
 				>
 					Create Activity
 				</Button>

@@ -3,8 +3,15 @@ import { api } from "@/utils/api";
 import { 
 	QuizForm, 
 	AssignmentForm, 
-	ProjectForm 
+	ProjectForm,
+	ReadingForm 
 } from './ActivityForms';
+import { 
+    QuizPreview, 
+    AssignmentPreview, 
+    ProjectPreview,
+    ReadingPreview 
+} from './previews';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -33,7 +40,7 @@ import {
 	CardDescription,
 } from "@/components/ui/card";
 import { Plus, Trash2 } from "lucide-react";
-import { ActivityType, ActivityContent, QuizContent, AssignmentContent, ProjectContent } from "@/types/curriculum";
+import { ActivityType, ActivityContent, QuizContent, AssignmentContent, ProjectContent, ReadingContent } from "@/types/curriculum";
 import { toast } from "@/hooks/use-toast";
 
 
@@ -49,6 +56,11 @@ const isAssignmentContent = (content: ActivityContent): content is AssignmentCon
 const isProjectContent = (content: ActivityContent): content is ProjectContent => {
 	return 'description' in content;
 };
+
+const isReadingContent = (content: ActivityContent): content is ReadingContent => {
+    return 'content' in content && !('questions' in content);
+};
+
 
 
 const getActivityIcon = (type: ActivityType) => {
@@ -101,6 +113,9 @@ const ActivityForm: React.FC<ActivityFormProps> = ({ nodeId, onSuccess, onCancel
 			case 'CLASS_PRESENTATION':
 				setContent({ description: '', objectives: [] });
 				break;
+			case 'READING':
+				setContent({ content: '', estimatedReadingTime: 0, references: [] });
+				break;
 			default:
 				setContent({ questions: [] });
 		}
@@ -152,6 +167,11 @@ const ActivityForm: React.FC<ActivityFormProps> = ({ nodeId, onSuccess, onCancel
 				isValid = false;
 				errorMessage = 'Description is required';
 			}
+		} else if (type === 'READING') {
+			if (isReadingContent(content) && !content.content.trim()) {
+				isValid = false;
+				errorMessage = 'Reading content is required';
+			}
 		}
 
 		if (!isValid) {
@@ -190,6 +210,7 @@ const ActivityForm: React.FC<ActivityFormProps> = ({ nodeId, onSuccess, onCancel
 					<SelectValue placeholder="Select activity type" />
 				  </SelectTrigger>
 				  <SelectContent>
+					<SelectItem value="READING">Reading Material</SelectItem>
 					<SelectItem value="QUIZ_MULTIPLE_CHOICE">Multiple Choice Quiz</SelectItem>
 					<SelectItem value="QUIZ_DRAG_DROP">Drag & Drop Quiz</SelectItem>
 					<SelectItem value="QUIZ_FILL_BLANKS">Fill in the Blanks</SelectItem>
@@ -222,6 +243,12 @@ const ActivityForm: React.FC<ActivityFormProps> = ({ nodeId, onSuccess, onCancel
 					content={content as ProjectContent} 
 					onChange={(newContent) => setContent(newContent)} 
 				  />
+				)}
+				{type === 'READING' && (
+					<ReadingForm 
+						content={content as ReadingContent} 
+						onChange={(newContent) => setContent(newContent)} 
+					/>
 				)}
 
 				<div className="flex items-center space-x-2">

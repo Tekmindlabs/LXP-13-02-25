@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { api } from "@/utils/api";
-import { CurriculumNode, NodeType } from "@/types/curriculum";
+import { CurriculumNode, NodeType, ActivityContent } from "@/types/curriculum";
 import { Button } from "@/components/ui/button";
 import { 
 	Plus, 
@@ -12,13 +12,13 @@ import {
 	Edit,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
 
 
 interface TreeNodeProps {
@@ -231,7 +231,28 @@ export const CurriculumTree: React.FC<CurriculumTreeProps> = ({
 		subjectId 
 	}, {
 		select: (data): CurriculumNode[] => {
-			return (data || []) as CurriculumNode[];
+			if (!data) return [];
+			return data.map(node => ({
+				...node,
+				description: node.description || undefined,
+				parentId: node.parentId || undefined,
+				resources: node.resources.map(resource => ({
+					...resource,
+					fileInfo: resource.fileInfo && typeof resource.fileInfo === 'object' ? {
+						name: String((resource.fileInfo as any).name || ''),
+						size: Number((resource.fileInfo as any).size || 0),
+						type: String((resource.fileInfo as any).type || ''),
+						url: (resource.fileInfo as any).url || undefined
+					} : undefined
+				})),
+				activities: node.activities.map(activity => ({
+					...activity,
+					content: typeof activity.content === 'object' ? 
+						activity.content as unknown as ActivityContent : 
+						{ questions: [] }
+				})),
+				children: undefined
+			}));
 		}
 	});
 	const createNode = api.curriculum.createNode.useMutation({
@@ -247,13 +268,34 @@ export const CurriculumTree: React.FC<CurriculumTreeProps> = ({
 		try {
 			const newNode = await createNode.mutateAsync({
 				title: "First Chapter",
-				type: "CHAPTER",
+				type: "CHAPTER" as const,
 				order: 1,
 				subjectId,
 			});
 			if (newNode) {
-				setSelectedNodeId(newNode.id);
-				onNodeSelect(newNode);
+				const processedNode: CurriculumNode = {
+					...newNode,
+					description: newNode.description || undefined,
+					parentId: newNode.parentId || undefined,
+					resources: newNode.resources.map(resource => ({
+						...resource,
+						fileInfo: resource.fileInfo && typeof resource.fileInfo === 'object' ? {
+							name: String((resource.fileInfo as any).name || ''),
+							size: Number((resource.fileInfo as any).size || 0),
+							type: String((resource.fileInfo as any).type || ''),
+							url: (resource.fileInfo as any).url || undefined
+						} : undefined
+					})),
+					activities: newNode.activities.map(activity => ({
+						...activity,
+						content: typeof activity.content === 'object' ? 
+							activity.content as unknown as ActivityContent : 
+							{ questions: [] }
+					})),
+					children: undefined
+				};
+				setSelectedNodeId(processedNode.id);
+				onNodeSelect(processedNode);
 			}
 		} catch (error) {
 			console.error("Failed to create chapter:", error);
@@ -263,14 +305,13 @@ export const CurriculumTree: React.FC<CurriculumTreeProps> = ({
 	const organizeNodes = (nodes: CurriculumNode[] = []): CurriculumNode[] => {
 		const nodeMap = new Map<string | null, CurriculumNode[]>();
 		
-		// Group nodes by parentId
 		nodes.forEach(node => {
-			const parentNodes = nodeMap.get(node.parentId) || [];
+			const parentId = node.parentId ?? null;
+			const parentNodes = nodeMap.get(parentId) || [];
 			parentNodes.push(node);
-			nodeMap.set(node.parentId, parentNodes);
+			nodeMap.set(parentId, parentNodes);
 		});
 
-		// Process nodes starting from top level (null parentId)
 		const processLevel = (parentId: string | null): CurriculumNode[] => {
 			const levelNodes = nodeMap.get(parentId) || [];
 			return levelNodes
@@ -284,7 +325,7 @@ export const CurriculumTree: React.FC<CurriculumTreeProps> = ({
 		return processLevel(null);
 	};
 
-	const organizedNodes = organizeNodes(nodes);
+	const organizedNodes = organizeNodes(nodes || []);
 
 	return (
 		<div className="h-full">

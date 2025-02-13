@@ -62,11 +62,18 @@ export interface ProjectContent {
 	}[];
 }
 
+export interface ReadingContent {
+    content: string;  // Novel editor content
+    estimatedReadingTime?: number;
+    references?: string[];
+}
+
 export type ActivityContent = 
 	| QuizContent 
 	| AssignmentContent 
 	| DiscussionContent 
-	| ProjectContent;
+	| ProjectContent
+	| ReadingContent;
 
 export interface CurriculumNode {
 	id: string;

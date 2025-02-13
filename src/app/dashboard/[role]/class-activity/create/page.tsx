@@ -2,22 +2,21 @@
 
 import ClassActivityForm from "@/components/dashboard/roles/super-admin/class-activity/ClassActivityForm";
 import { useRouter } from "next/navigation";
-import { use } from 'react';
 
 interface Props {
-	params: Promise<{
+	params: {
 		role: string;
-	}>;
+	};
 }
 
 export default function CreateClassActivityPage({ params }: Props) {
 	const router = useRouter();
-	const resolvedParams = use(params);
+	const { role } = params;
 
 	return (
-		<div className="container mx-auto py-8">
+		<div>
 			<ClassActivityForm 
-				onClose={() => router.push(`/dashboard/${resolvedParams.role}/class-activity`)} 
+				onClose={() => router.push(`/dashboard/${role}/class-activity`)} 
 			/>
 		</div>
 	);

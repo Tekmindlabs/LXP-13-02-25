@@ -13,8 +13,8 @@ export const SubjectView: React.FC<SubjectViewProps> = ({ subjectId }) => {
 	if (!subject) return <div>Subject not found</div>;
 
 	return (
-		<div className="flex flex-col h-[calc(100vh-4rem)]">
-			<header className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+		<div className="flex flex-col h-full">
+			<header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
 				<div className="px-6 py-4">
 					<h1 className="text-2xl sm:text-3xl font-bold tracking-tight truncate">
 						{subject.name}
@@ -22,11 +22,9 @@ export const SubjectView: React.FC<SubjectViewProps> = ({ subjectId }) => {
 				</div>
 			</header>
 
-			<div className="flex-1 overflow-hidden">
+			<main className="flex-1 overflow-y-auto">
 				<CurriculumManager subjectId={subjectId} />
-			</div>
+			</main>
 		</div>
-
 	);
-
 };

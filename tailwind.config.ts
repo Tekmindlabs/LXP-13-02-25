@@ -6,6 +6,7 @@ const config: Config = {
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+    './node_modules/novel/dist/**/*.{js,ts,jsx,tsx}' // Add Novel editor content path
   ],
   theme: {
     container: {
@@ -56,9 +57,35 @@ const config: Config = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      typography: {
+        DEFAULT: {
+          css: {
+            maxWidth: 'none',
+            color: 'hsl(var(--foreground))',
+            a: {
+              color: 'hsl(var(--primary))',
+              '&:hover': {
+              color: 'hsl(var(--primary))',
+              },
+            },
+            // Add Novel editor specific styles
+            '.novel-prose-lg': {
+              fontSize: '1.125rem',
+              lineHeight: '1.75rem',
+            },
+            '.novel-prose': {
+              maxWidth: '65ch',
+              color: 'var(--tw-prose-body)',
+              '[class~="lead"]': {
+              color: 'var(--tw-prose-lead)',
+              },
+            },
+          },
+        },
+      },
     },
   },
-  plugins: [],
+  plugins: [require('@tailwindcss/typography')],
 }
 
 export default config

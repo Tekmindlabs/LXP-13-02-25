@@ -4,6 +4,7 @@ const nextConfig = {
   experimental: {
     optimizeCss: true,
   },
+  transpilePackages: ['novel'],
   webpack: (config, { isServer }) => {
     // Native module handling
     if (!isServer) {
