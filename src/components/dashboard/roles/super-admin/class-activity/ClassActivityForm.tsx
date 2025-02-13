@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ResourcesSection } from "./ResourcesSection";
 import { api } from "@/utils/api";
-import { Status } from "@prisma/client";
+
 import { 
 	ActivityType, 
 	ActivityMode, 
@@ -51,12 +51,8 @@ const formSchema = z.object({
 		teacherId: z.string(),
 	})),
 	classGroupId: z.string().optional(),
-	newSubjects: z.array(z.object({
-		name: z.string(),
-		code: z.string(),
-		description: z.string().optional(),
-		status: z.enum([Status.ACTIVE, Status.INACTIVE, Status.ARCHIVED]).default(Status.ACTIVE),
-	})).optional(),
+
+
 	inheritCalendar: z.boolean().default(true),
 	configuration: z.object({
 		activityMode: z.nativeEnum(ActivityMode),
@@ -134,8 +130,8 @@ export default function ClassActivityForm({ activityId, onClose }: Props) {
 			subjectIds: [],
 			teacherAssignments: [],
 			classGroupId: undefined,
-			newSubjects: [],
 			inheritCalendar: true,
+
 			configuration: {
 				activityMode: ActivityMode.IN_CLASS,
 				isGraded: true,
@@ -157,20 +153,24 @@ export default function ClassActivityForm({ activityId, onClose }: Props) {
 	const { data: classes = [], isLoading: classesLoading } = api.class.list.useQuery();
 	const { data: subjects = [], isLoading: subjectsLoading } = api.subject.getSubjectsByClassId.useQuery(
 		{ classId: form.watch('classId') || '' },
-		{ enabled: !!form.watch('classId') }
+		{ 
+			enabled: !!form.watch('classId'),
+			refetchOnMount: true
+		}
 	);
+
 	const { data: teachers = [], isLoading: teachersLoading } = api.teacher.searchTeachers.useQuery({});
 	const { data: classGroups = [], isLoading: classGroupsLoading } = api.classGroup.list.useQuery();
 
-	const createSubjectMutation = api.subject.create.useMutation();
+
 
 	useEffect(() => {
 		if (form.watch('classId')) {
-			// Initialize empty teacher assignments when class changes
-			form.setValue('teacherAssignments', []);
 			form.setValue('subjectIds', []);
+			form.setValue('teacherAssignments', []);
 		}
-	}, [form.watch('classId')]);
+	}, [form.watch('classId'), form]);
+
 
 
 
@@ -239,7 +239,7 @@ export default function ClassActivityForm({ activityId, onClose }: Props) {
 							subjectIds: Array.isArray(activity.subjectId) ? activity.subjectId : [activity.subjectId],
 							teacherAssignments: activity.teacherAssignments || [],
 							classGroupId: activity.classGroupId || undefined,
-							newSubjects: [], // Initialize empty for edit mode
+
 							inheritCalendar: activity.classGroup?.calendar?.inheritSettings ?? true,
 							configuration: {
 								activityMode: config.activityMode,
@@ -279,21 +279,10 @@ export default function ClassActivityForm({ activityId, onClose }: Props) {
 
 	const onSubmit = async (data: FormData) => {
 		try {
-			// Create new subjects first if any
-			const createdSubjectIds = data.newSubjects?.length ? 
-				await Promise.all(data.newSubjects.map(async (subject) => {
-					const result = await createSubjectMutation.mutateAsync({
-						...subject,
-						classGroupIds: data.classGroupId ? [data.classGroupId] : []
-					});
-					return result.id;
-				})) : [];
-
 			const formData = {
 				...data,
 				classId: data.classId || "",
 				subjectId: data.subjectIds[0], // Primary subject
-				subjectIds: [...data.subjectIds, ...createdSubjectIds],
 				configuration: {
 					...data.configuration,
 					availabilityDate: new Date(data.configuration.availabilityDate),
@@ -329,6 +318,7 @@ export default function ClassActivityForm({ activityId, onClose }: Props) {
 			});
 		}
 	};
+
 
 
 
@@ -490,87 +480,14 @@ export default function ClassActivityForm({ activityId, onClose }: Props) {
 									/>
 								</div>
 
-								{/* New Subjects Section */}
-								{form.watch('classGroupId') && (
-									<div className="mt-4">
-										<h3 className="text-lg font-medium">New Subjects</h3>
-										<div className="space-y-4">
-											{form.watch('newSubjects')?.map((_, index) => (
-												<div key={index} className="grid grid-cols-2 gap-4 p-4 border rounded">
-													<FormField
-														control={form.control}
-														name={`newSubjects.${index}.name`}
-														render={({ field }) => (
-															<FormItem>
-																<FormLabel>Subject Name</FormLabel>
-																<FormControl>
-																	<Input {...field} />
-																</FormControl>
-																<FormMessage />
-															</FormItem>
-														)}
-													/>
-													<FormField
-														control={form.control}
-														name={`newSubjects.${index}.code`}
-														render={({ field }) => (
-															<FormItem>
-																<FormLabel>Subject Code</FormLabel>
-																<FormControl>
-																	<Input {...field} />
-																</FormControl>
-																<FormMessage />
-															</FormItem>
-														)}
-													/>
-													<FormField
-														control={form.control}
-														name={`newSubjects.${index}.description`}
-														render={({ field }) => (
-															<FormItem>
-																<FormLabel>Description</FormLabel>
-																<FormControl>
-																	<Textarea {...field} />
-																</FormControl>
-																<FormMessage />
-															</FormItem>
-														)}
-													/>
-													<Button
-														type="button"
-														variant="destructive"
-														onClick={() => {
-															const currentSubjects = form.getValues('newSubjects') || [];
-															currentSubjects.splice(index, 1);
-															form.setValue('newSubjects', currentSubjects);
-														}}
-													>
-														Remove Subject
-													</Button>
-												</div>
-											))}
-											<Button
-												type="button"
-												variant="outline"
-												onClick={() => {
-													const currentSubjects = form.getValues('newSubjects') || [];
-													form.setValue('newSubjects', [
-														...currentSubjects,
-														{ name: '', code: '', description: '', status: Status.ACTIVE }
-													]);
-												}}
-											>
-												Add New Subject
-											</Button>
-										</div>
-									</div>
-								)}
+
+
 
 								{/* Teacher Assignments */}
 								{form.watch('subjectIds')?.length > 0 && (
 									<div className="mt-4">
 										<h3 className="text-lg font-medium mb-4">Teacher Assignments</h3>
-										{form.watch('subjectIds').map((subjectId, index) => (
+										{form.watch('subjectIds').map((subjectId: string, index: number) => (
 											<div key={subjectId} className="mb-4">
 												<FormField
 													control={form.control}

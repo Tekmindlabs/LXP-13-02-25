@@ -57,7 +57,7 @@ export const classActivityRouter = createTRPCRouter({
 			type: z.nativeEnum(ActivityType),
 			classId: z.string().optional(),
 			subjectId: z.string(),
-			subjectIds: z.array(z.string()).optional(),
+			subjectIds: z.array(z.string()),
 			classGroupId: z.string().optional(),
 			calendar: z.object({
 				inheritSettings: z.boolean(),
@@ -68,6 +68,14 @@ export const classActivityRouter = createTRPCRouter({
 		}))
 		.mutation(async ({ ctx, input }) => {
 			const { resources, configuration, calendar, subjectIds, ...activityData } = input;
+
+			// Validate that at least one subject is selected
+			if (!subjectIds?.length) {
+				throw new TRPCError({
+					code: 'BAD_REQUEST',
+					message: 'At least one subject must be selected',
+				});
+			}
 
 			const configJson = {
 				...configuration,
@@ -109,7 +117,7 @@ export const classActivityRouter = createTRPCRouter({
 					resources: resourcesData ? { create: resourcesData } : undefined,
 					...(calendarId && { calendarId }),
 					subjects: {
-						connect: [...(subjectIds || []), input.subjectId].map(id => ({ id }))
+						connect: subjectIds.map(id => ({ id }))
 					}
 				},
 				include: {
@@ -256,6 +264,7 @@ export const classActivityRouter = createTRPCRouter({
 			classId: z.string(),
 			subjectId: z.string(),
 			subjectIds: z.array(z.string()).optional(),
+			classGroupId: z.string().optional(),
 			calendar: z.object({
 				inheritSettings: z.boolean(),
 				id: z.string()
@@ -264,13 +273,13 @@ export const classActivityRouter = createTRPCRouter({
 			resources: z.array(resourceSchema).optional()
 		}))
 		.mutation(async ({ ctx, input }) => {
-			const { id, calendar, subjectIds, resources, ...data } = input;
+			const { id, calendar, subjectIds, resources, classGroupId, ...data } = input;
 
 			// Handle calendar inheritance
 			let calendarId: string | undefined;
-			if (calendar && data.classGroupId) {
+			if (calendar && classGroupId) {
 				const classGroup = await ctx.prisma.classGroup.findUnique({
-					where: { id: data.classGroupId },
+					where: { id: classGroupId },
 					include: { program: { include: { calendar: true } } }
 				});
 
@@ -286,6 +295,7 @@ export const classActivityRouter = createTRPCRouter({
 				data: {
 					...data,
 					...(calendarId && { calendarId }),
+					...(classGroupId && { classGroupId }),
 					subjects: {
 						set: [...(subjectIds || []), input.subjectId].map(id => ({ id }))
 					},
@@ -298,8 +308,7 @@ export const classActivityRouter = createTRPCRouter({
 					class: { select: { name: true } },
 					classGroup: { select: { name: true } },
 					subject: { select: { name: true } },
-					subjects: { select: { id: true, name: true } },
-					resources: true
+					subjects: { select: { id: true, name: true } }
 				}
 			});
 		}),

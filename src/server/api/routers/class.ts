@@ -40,7 +40,7 @@ export const classRouter = createTRPCRouter({
 									teacher: {
 										connect: { id: teacherId }
 									},
-									isClassTutor: teacherId === classTutorId,
+									isClassTeacher: teacherId === classTutorId,
 									status: Status.ACTIVE,
 								})),
 							},
@@ -104,7 +104,7 @@ export const classRouter = createTRPCRouter({
 						data: teacherIds.map(teacherId => ({
 							classId: id,
 							teacherId,
-							isClassTutor: teacherId === classTutorId,
+							isClassTeacher: teacherId === classTutorId,
 							status: Status.ACTIVE,
 						})),
 					});

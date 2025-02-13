@@ -20,9 +20,16 @@ export function Providers({
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: {
-        retry: 1,
+        retry: 3,
         refetchOnWindowFocus: false,
-        staleTime: 5 * 1000, // 5 seconds
+        staleTime: 0, // Always fetch fresh data
+        gcTime: 0, // Don't cache
+        },
+        mutations: {
+        retry: 2,
+        onError: (error) => {
+          console.error('Mutation error:', error);
+        },
       },
     },
   }));
@@ -54,8 +61,9 @@ export function Providers({
       <QueryClientProvider client={queryClient}>
         <SessionProvider 
           session={session} 
-          refetchOnWindowFocus={false}
+          refetchOnWindowFocus={true}
           refetchInterval={0}
+          refetchWhenOffline={false}
         >
           <ThemeProvider 
             attribute="class" 

@@ -20,6 +20,20 @@ export const curriculumRouter = createTRPCRouter({
 			});
 		}),
 
+	getNode: protectedProcedure
+		.input(z.object({
+			nodeId: z.string()
+		}))
+		.query(async ({ ctx, input }) => {
+			return ctx.prisma.curriculumNode.findUnique({
+				where: { id: input.nodeId },
+				include: {
+					resources: true,
+					activities: true
+				}
+			});
+		}),
+
 	createNode: protectedProcedure
 		.input(z.object({
 			title: z.string(),
@@ -71,16 +85,36 @@ export const curriculumRouter = createTRPCRouter({
 	// Resource operations
 	createResource: protectedProcedure
 		.input(z.object({
-			title: z.string(),
+			title: z.string().min(1, "Title is required"),
 			type: z.nativeEnum(CurriculumResourceType),
-			content: z.string(),
+			content: z.string().min(1, "Content is required"),
 			nodeId: z.string(),
 			fileInfo: z.record(z.any()).optional()
 		}))
 		.mutation(async ({ ctx, input }) => {
-			return ctx.prisma.curriculumResource.create({
-				data: input
-			});
+			try {
+				// Check if node exists
+				const node = await ctx.prisma.curriculumNode.findUnique({
+					where: { id: input.nodeId }
+				});
+
+				if (!node) {
+					throw new Error("Node not found");
+				}
+
+				// Create resource
+				const resource = await ctx.prisma.curriculumResource.create({
+					data: input,
+					include: {
+						node: true
+					}
+				});
+
+				return resource;
+			} catch (error) {
+				console.error("Error creating resource:", error);
+				throw error;
+			}
 		}),
 
 	updateResource: protectedProcedure

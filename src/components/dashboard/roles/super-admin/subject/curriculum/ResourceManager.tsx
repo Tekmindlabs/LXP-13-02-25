@@ -21,7 +21,7 @@ import {
 	CardTitle,
 	CardDescription,
 } from "@/components/ui/card";
-import { Plus, FileText, Video, Link, File, Trash2, Bold, Italic, Underline as UnderlineIcon, Link as LinkIcon } from "lucide-react";
+import { Plus, FileText, Video, Link, File, Trash2 } from "lucide-react";
 
 
 
@@ -31,65 +31,73 @@ interface ResourceFormProps {
 	nodeId: string;
 	onSuccess: () => void;
 	onCancel: () => void;
-	refetch: () => Promise<void>;
 }
 
-const ResourceForm: React.FC<ResourceFormProps> = ({ nodeId, onSuccess, onCancel, refetch }) => {
+
+const ResourceForm: React.FC<ResourceFormProps> = ({ nodeId, onSuccess, onCancel }) => {
 	const [title, setTitle] = useState("");
 	const [type, setType] = useState<CurriculumResourceType>("READING");
 	const [content, setContent] = useState("");
+	const [error, setError] = useState("");
+	const utils = api.useContext();
 
 	const createResource = api.curriculum.createResource.useMutation({
-		onSuccess: async (data) => {
-			console.log('Resource created successfully:', data);
-			await refetch();
-			onSuccess();
+		onMutate: () => {
+			setError("");
+		},
+		onSuccess: async () => {
+			await utils.curriculum.getNode.invalidate();
+			await utils.curriculum.getNodes.invalidate();
 			setTitle("");
 			setType("READING");
 			setContent("");
+			onSuccess();
 		},
 		onError: (error) => {
-			console.error("Failed to create resource:", error);
-			// You might want to add error UI here
+			setError(error.message || "Failed to save resource");
+			console.error("Error creating resource:", error);
 		}
 	});
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!title.trim() || !content.trim()) {
-			console.error("Title and content are required");
+		if (createResource.status === 'pending') return;
+
+		setError("");
+		if (!title.trim()) {
+			setError("Title is required");
+			return;
+		}
+		if (!content.trim()) {
+			setError("Content is required");
 			return;
 		}
 
 		try {
-			console.log('Creating resource with data:', {
+			const data = {
 				title: title.trim(),
 				type,
 				content: content.trim(),
 				nodeId,
-			});
-			
-			await createResource.mutateAsync({
-				title: title.trim(),
-				type,
-				content: content.trim(),
-				nodeId,
-			});
+			};
+			console.log('Submitting resource:', data);
+			await createResource.mutateAsync(data);
 		} catch (error) {
-			console.error("Error creating resource:", error);
+			console.error("Error in handleSubmit:", error);
 		}
 	};
+
 
 	const renderContentInput = () => {
 		switch (type) {
 			case "READING":
 				return (
-					<div className="relative min-h-[300px] w-full">
+					<div className="relative w-full border rounded-lg">
 						<NovelEditor
 							value={content}
 							onChange={setContent}
 							placeholder="Start writing your content..."
-							className="min-h-[300px]"
+							className="min-h-[400px]"
 						/>
 					</div>
 				);
@@ -121,12 +129,22 @@ const ResourceForm: React.FC<ResourceFormProps> = ({ nodeId, onSuccess, onCancel
 	return (
 		<Card className="relative">
 			<CardContent className="space-y-4 pt-4">
+				{error && (
+					<div className="text-sm text-red-500 font-medium">
+						{error}
+					</div>
+				)}
 				<Input
 					value={title}
 					onChange={(e) => setTitle(e.target.value)}
 					placeholder="Resource title"
+					disabled={createResource.status === 'pending'}
 				/>
-				<Select value={type} onValueChange={(value) => setType(value as CurriculumResourceType)}>
+				<Select 
+					value={type} 
+					onValueChange={(value) => setType(value as CurriculumResourceType)}
+					disabled={createResource.status === 'pending'}
+				>
 					<SelectTrigger>
 						<SelectValue placeholder="Select resource type" />
 					</SelectTrigger>
@@ -139,12 +157,18 @@ const ResourceForm: React.FC<ResourceFormProps> = ({ nodeId, onSuccess, onCancel
 				</Select>
 				{renderContentInput()}
 				<div className="flex justify-end space-x-2">
-					<Button variant="outline" onClick={onCancel}>Cancel</Button>
+					<Button 
+						variant="outline" 
+						onClick={onCancel}
+						disabled={createResource.status === 'pending'}
+					>
+						Cancel
+					</Button>
 					<Button 
 						onClick={handleSubmit} 
 						disabled={createResource.status === 'pending'}
 					>
-						Add Resource
+						{createResource.status === 'pending' ? 'Saving...' : 'Save Resource'}
 					</Button>
 				</div>
 			</CardContent>
@@ -167,54 +191,56 @@ const ResourceIcon: React.FC<{ type: CurriculumResourceType }> = ({ type }) => {
 	}
 };
 
-interface ResourceNode {
-	id: string;
-	resources: {
-		id: string;
-		title: string;
-		type: CurriculumResourceType;
-		content: string;
-	}[];
-}
-
 interface ResourceManagerProps {
+
 	nodeId: string;
 }
 
 export const ResourceManager: React.FC<ResourceManagerProps> = ({ nodeId }) => {
 	const [showForm, setShowForm] = useState(false);
-	const { data: nodes, refetch } = api.curriculum.getNodes.useQuery({ 
-		subjectId: nodeId 
+	const [isLoading, setIsLoading] = useState(false);
+	const utils = api.useContext();
+
+	const { data: node } = api.curriculum.getNode.useQuery({ 
+		nodeId 
 	}, {
-		refetchOnWindowFocus: false,
-		onError: (error) => {
-			console.error("Error fetching nodes:", error);
-		},
-		onSuccess: (data) => {
-			console.log('Fetched nodes:', data);
-		}
+		refetchOnWindowFocus: true,
+		refetchOnMount: true,
+		refetchOnReconnect: true,
+		staleTime: 0,
 	});
+
+	const resources = node?.resources || [];
+
 	const deleteResource = api.curriculum.deleteResource.useMutation({
-		onSuccess: () => {
-			console.log('Resource deleted successfully');
-			void refetch();
-		},
-		onError: (error) => {
-			console.error("Error deleting resource:", error);
+		onSuccess: async () => {
+			await utils.curriculum.getNode.invalidate();
+			await utils.curriculum.getNodes.invalidate();
 		}
 	});
 
 	const handleDelete = async (id: string) => {
-		await deleteResource.mutateAsync(id);
+		try {
+			setIsLoading(true);
+			await deleteResource.mutateAsync(id);
+		} catch (error) {
+			console.error("Error deleting resource:", error);
+		} finally {
+			setIsLoading(false);
+		}
 	};
+
+	if (!node) {
+		return <div>Loading resources...</div>;
+	}
 
 	return (
 		<div className="space-y-4 h-full flex flex-col">
 			<div className="flex justify-between items-center sticky top-0 bg-background py-2">
 				<h3 className="text-lg font-medium">Learning Resources</h3>
-				<Button onClick={() => setShowForm(true)} disabled={showForm}>
+				<Button onClick={() => setShowForm(true)} disabled={showForm || isLoading}>
 					<Plus className="h-4 w-4 mr-2" />
-					Add Resource
+					New Resource
 				</Button>
 			</div>
 
@@ -222,48 +248,52 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({ nodeId }) => {
 				{showForm && (
 					<ResourceForm
 						nodeId={nodeId}
-						refetch={refetch}
 						onSuccess={() => {
 							setShowForm(false);
+							utils.curriculum.getNodes.invalidate();
 						}}
 						onCancel={() => setShowForm(false)}
 					/>
 				)}
 
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-					{nodes?.map((node: ResourceNode) =>
-						node.resources.map((resource) => (
-							<Card key={resource.id}>
-								<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-									<div className="flex items-center space-x-2">
-										<ResourceIcon type={resource.type} />
-										<CardTitle className="text-sm font-medium">
-											{resource.title}
-										</CardTitle>
-									</div>
-									<Button
-										variant="ghost"
-										size="sm"
-										onClick={() => handleDelete(resource.id)}
-									>
-										<Trash2 className="h-4 w-4" />
-									</Button>
-								</CardHeader>
-								<CardContent>
-									{resource.type === "READING" ? (
-										<div 
-											className="prose prose-lg max-w-none dark:prose-invert focus:outline-none" 
-											dangerouslySetInnerHTML={{ __html: resource.content }}
-										/>
-									) : (
-										<CardDescription className="text-sm">
-											{resource.content}
-										</CardDescription>
-									)}
-								</CardContent>
-							</Card>
-						))
+					{resources.length === 0 && !showForm && (
+						<div className="col-span-2 text-center text-muted-foreground py-8">
+							No resources added yet. Click "New Resource" to add one.
+						</div>
 					)}
+					{resources.map((resource) => (
+						<Card key={resource.id}>
+							<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+								<div className="flex items-center space-x-2">
+									<ResourceIcon type={resource.type} />
+									<CardTitle className="text-sm font-medium">
+										{resource.title}
+									</CardTitle>
+								</div>
+								<Button
+									variant="ghost"
+									size="sm"
+									onClick={() => handleDelete(resource.id)}
+								>
+									<Trash2 className="h-4 w-4" />
+								</Button>
+							</CardHeader>
+							<CardContent>
+								{resource.type === "READING" ? (
+									<div 
+										className="prose prose-lg max-w-none dark:prose-invert prose-headings:mt-4 prose-headings:mb-2 prose-p:my-2 prose-img:my-4 overflow-x-auto"
+										dangerouslySetInnerHTML={{ __html: resource.content }}
+									/>
+								) : (
+									<CardDescription className="text-sm">
+										{resource.content}
+									</CardDescription>
+								)}
+							</CardContent>
+						</Card>
+					))}
+
 				</div>
 			</div>
 		</div>
