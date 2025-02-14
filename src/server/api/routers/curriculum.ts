@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { ActivityType, CurriculumResourceType } from "@prisma/client";
-import { NodeType } from "@/types/curriculum";
+import { NodeType, ResourceFileInfo, NodeLearningContext, NodeResourceContext, NodeAssessmentContext } from "@/types/curriculum";
 
 export const curriculumRouter = createTRPCRouter({
 	// Node operations
@@ -60,7 +60,26 @@ export const curriculumRouter = createTRPCRouter({
 			description: z.string().optional(),
 			type: z.enum(["CHAPTER", "TOPIC", "SUBTOPIC"]).optional(),
 			parentId: z.string().optional(),
-			order: z.number().optional()
+			order: z.number().optional(),
+			learningContext: z.object({
+				objectives: z.array(z.string()).optional(),
+				duration: z.string().optional(),
+				prerequisites: z.array(z.string()).optional(),
+				keyTerms: z.array(z.string()).optional(),
+				outcomes: z.array(z.string()).optional(),
+			}).optional(),
+			resourceContext: z.object({
+				materials: z.object({
+					primary: z.array(z.string()).optional(),
+					supplementary: z.array(z.string()).optional(),
+				}).optional(),
+				references: z.array(z.string()).optional(),
+			}).optional(),
+			assessmentContext: z.object({
+				methods: z.array(z.string()).optional(),
+				criteria: z.array(z.string()).optional(),
+				weightage: z.number().optional(),
+			}).optional(),
 		}))
 		.mutation(async ({ ctx, input }) => {
 			const { id, ...data } = input;
@@ -89,11 +108,16 @@ export const curriculumRouter = createTRPCRouter({
 			type: z.nativeEnum(CurriculumResourceType),
 			content: z.string().min(1, "Content is required"),
 			nodeId: z.string(),
-			fileInfo: z.record(z.any()).optional()
+			fileInfo: z.object({
+				size: z.number(),
+				mimeType: z.string(),
+				createdAt: z.date(),
+				updatedAt: z.date(),
+				publicUrl: z.string()
+			}).optional()
 		}))
 		.mutation(async ({ ctx, input }) => {
 			try {
-				// Check if node exists
 				const node = await ctx.prisma.curriculumNode.findUnique({
 					where: { id: input.nodeId }
 				});
@@ -102,9 +126,14 @@ export const curriculumRouter = createTRPCRouter({
 					throw new Error("Node not found");
 				}
 
-				// Create resource
 				const resource = await ctx.prisma.curriculumResource.create({
-					data: input,
+					data: {
+						title: input.title,
+						type: input.type,
+						content: input.content,
+						nodeId: input.nodeId,
+						fileInfo: input.fileInfo
+					},
 					include: {
 						node: true
 					}
@@ -116,6 +145,7 @@ export const curriculumRouter = createTRPCRouter({
 				throw error;
 			}
 		}),
+
 
 	updateResource: protectedProcedure
 		.input(z.object({

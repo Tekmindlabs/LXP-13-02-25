@@ -6,6 +6,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CurriculumTree } from "./CurriculumTree";
 import { NodeEditor } from "./NodeEditor";
+import { NodeView } from "./NodeView";
 import { ResourceManager } from "./ResourceManager";
 import { ActivityManager } from "./ActivityManager";
 import { LuChevronLeft } from "react-icons/lu";
@@ -55,7 +56,9 @@ export const CurriculumManager: React.FC<{ subjectId: string }> = ({ subjectId }
 
 		switch (activeView) {
 			case 'content':
-				return <NodeEditor node={selectedNode} />;
+				return showNodeEditor ? 
+					<NodeEditor node={selectedNode} /> : 
+					<NodeView node={selectedNode} />;
 			case 'resources':
 				return <ResourceManager nodeId={selectedNode.id} />;
 			case 'activities':

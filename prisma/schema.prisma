@@ -1130,6 +1130,12 @@ model CurriculumNode {
   order       Int
   subjectId   String
   subject     Subject              @relation(fields: [subjectId], references: [id])
+  
+  // Add new context fields
+  learningContext    Json?    // Store learning objectives, duration, prerequisites, etc.
+  resourceContext    Json?    // Store materials and references
+  assessmentContext  Json?    // Store assessment methods, criteria, and weightage
+  
   resources   CurriculumResource[]
   activities  CurriculumActivity[]
   createdAt   DateTime             @default(now())

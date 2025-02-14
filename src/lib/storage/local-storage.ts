@@ -3,15 +3,25 @@ import path from 'path';
 import crypto from 'crypto';
 
 const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const ALLOWED_TYPES = new Set([
-	'image/jpeg',
-	'image/png',
-	'image/gif',
-	'application/pdf',
-	'application/msword',
-	'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-]);
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB for videos
+
+const ALLOWED_MIME_TYPES = {
+	video: ['video/mp4', 'video/webm', 'video/ogg'],
+	document: [
+		'application/pdf',
+		'application/msword',
+		'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+		'text/plain',
+		'application/rtf'
+	],
+	image: [
+		'image/jpeg',
+		'image/png',
+		'image/gif'
+	]
+};
+
+type FileType = 'video' | 'document' | 'image';
 
 interface FileInfo {
 	size: number;
@@ -38,37 +48,37 @@ function generateFileName(originalName: string): string {
 	return `${timestamp}-${hash}${ext}`;
 }
 
-// Validate file
-function validateFile(file: Buffer, mimeType: string): void {
-	if (file.length > MAX_FILE_SIZE) {
-		throw new Error(`File size exceeds maximum limit of ${MAX_FILE_SIZE / 1024 / 1024}MB`);
-	}
-	if (!ALLOWED_TYPES.has(mimeType)) {
-		throw new Error('File type not allowed');
+// Validate file type
+function validateFileType(mimeType: string, type: FileType): void {
+	if (!ALLOWED_MIME_TYPES[type].includes(mimeType)) {
+		throw new Error(`Invalid file type. Allowed types for ${type}: ${ALLOWED_MIME_TYPES[type].join(', ')}`);
 	}
 }
 
+// Validate file
+function validateFile(file: Buffer, mimeType: string, type: FileType): void {
+	if (file.length > MAX_FILE_SIZE) {
+		throw new Error(`File size exceeds maximum limit of ${MAX_FILE_SIZE / 1024 / 1024}MB`);
+	}
+	validateFileType(mimeType, type);
+}
+
 export const localStorage = {
-	async saveFile(file: Buffer, originalName: string, mimeType: string, subDir?: string): Promise<string> {
+	async saveFile(file: Buffer, originalName: string, mimeType: string, type: FileType): Promise<string> {
 		try {
-			validateFile(file, mimeType);
+			validateFile(file, mimeType, type);
 			await ensureUploadDir();
 			
 			const fileName = generateFileName(originalName);
-			const uploadPath = subDir 
-				? path.join(UPLOAD_DIR, subDir)
-				: UPLOAD_DIR;
-
-			if (subDir) {
-				await fs.mkdir(uploadPath, { recursive: true });
-			}
-
+			const subDir = type;
+			const uploadPath = path.join(UPLOAD_DIR, subDir);
+			
+			await fs.mkdir(uploadPath, { recursive: true });
 			const filePath = path.join(uploadPath, fileName);
 			await fs.writeFile(filePath, file);
 
-			// Return public URL path
-			const publicPath = `/uploads${subDir ? `/${subDir}` : ''}/${fileName}`;
-			return publicPath;
+			return `/uploads/${subDir}/${fileName}`;
+
 		} catch (error) {
 			console.error('Error saving file:', error);
 			throw error;

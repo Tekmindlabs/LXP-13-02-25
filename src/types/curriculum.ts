@@ -19,10 +19,19 @@ export type ActivityType =
 	| 'CLASS_EXAM';
 
 export interface FileInfo {
-	name: string;
 	size: number;
-	type: string;
-	url?: string;
+	mimeType: string;
+	createdAt: string;
+	updatedAt: string;
+	publicUrl: string;
+}
+
+export interface ResourceFileInfo {
+	size: number;
+	mimeType: string;
+	createdAt: Date;
+	updatedAt: Date;
+	publicUrl: string;
 }
 
 export interface QuizContent {
@@ -75,6 +84,28 @@ export type ActivityContent =
 	| ProjectContent
 	| ReadingContent;
 
+export interface NodeLearningContext {
+	objectives?: string[];
+	duration?: string;
+	prerequisites?: string[];
+	keyTerms?: string[];
+	outcomes?: string[];
+}
+
+export interface NodeResourceContext {
+	materials?: {
+		primary?: string[];
+		supplementary?: string[];
+	};
+	references?: string[];
+}
+
+export interface NodeAssessmentContext {
+	methods?: string[];
+	criteria?: string[];
+	weightage?: number;
+}
+
 export interface CurriculumNode {
 	id: string;
 	title: string;
@@ -83,6 +114,12 @@ export interface CurriculumNode {
 	parentId?: string;
 	order: number;
 	subjectId: string;
+	
+	// Context fields
+	learningContext?: NodeLearningContext;
+	resourceContext?: NodeResourceContext;
+	assessmentContext?: NodeAssessmentContext;
+	
 	resources: CurriculumResource[];
 	activities: CurriculumActivity[];
 	children?: CurriculumNode[];

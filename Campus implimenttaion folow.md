@@ -1,413 +1,341 @@
-
-
-    Grading System Architecture:
-
-a) Inheritance Flow:
-
-    Program → Assessment System Configuration
-    Class Group → Inherits Program Assessment System
-    Class → Inherits Class Group Assessment System
-    Subject → Applies Assessment System with subject-specific configurations
-
-b) Term Structure Integration:
-
-    Each term (Semester/Term/Quarter) contains assessment periods
-    Subjects within a class maintain grade records per assessment period
-    Cumulative grades are calculated based on term weightage
-
-    Implementation Strategy:
-
-A. Data Structure Updates:
-
-Class Grading Book
-
-├── Class Details
-
-├── Term Structure (inherited)
-
-├── Assessment System (inherited)
-
-└── Subject Grading Records
-
-    ├── Subject 1
-
-    │   ├── Term 1
-
-    │   │   ├── Assessment Period 1
-
-    │   │   └── Assessment Period 2
-
-    │   └── Term 2
-
-    │       ├── Assessment Period 1
-
-    │       └── Assessment Period 2
-
-    └── Subject 2
-
-        └── [Similar structure]
-
-B. Workflow:
-
-    Class Creation:
-
-    When a class is created, automatically generate grading book
-    Inherit assessment system and term structure
-    Create subject-wise grading templates
-    Initialize assessment period records
-
-    Grade Recording:
-
-    Record grades by subject and assessment period
-    Apply subject-specific assessment criteria
-    Calculate period-wise grades using inherited assessment system
-
-    Cumulative Calculations:
-
-    Calculate subject-wise term grades
-    Apply term weightage for final grades
-    Generate cumulative grades across subjects
-
-    Key Components to Implement:
-
-A. Grade Book Service:
-
-    Initialize grade book structure
-    Manage grade entries
-    Calculate cumulative grades
-    Handle assessment system inheritance
-
-B. Subject Grade Manager:
-
-    Apply subject-specific grading criteria
-    Track assessment completion
-    Calculate subject-wise averages
-
-C. Term Grade Calculator:
-
-    Process term-wise grades
-    Apply weightage systems
-    Generate term reports
-
-    Integration Points:
-
-A. With Existing Systems:
-
-    AssessmentService: Use for grade calculations
-    TermManagementService: Term structure and periods
-    Class Management: Grade book initialization
-
-B. Data Flow:
-
-Assessment Entry → Subject Grade → Term Grade → Cumulative Grade
-
-    Business Logic Considerations:
-
-A. Grade Calculations:
-
-    For Marking Scheme:
-        Calculate percentage per assessment
-        Apply assessment weightage
-        Generate term grades
-
-    For CGPA:
-        Convert marks to grade points
-        Calculate GPA per term
-        Apply semester weightage if enabled
-
-    For Rubric:
-        Aggregate criterion scores
-        Calculate percentage equivalent
-        Apply assessment weightage
-
-B. Cumulative Calculations:
-
-    Consider term weightage
-    Include/exclude backlogs as per configuration
-    Apply subject credits if applicable
-
-    Implementation Phases:
-
-Phase 1:
-
-    Grade book structure creation
-    Basic grade entry system
-    Subject-wise grade tracking
-
-Phase 2:
-
-    Term-wise calculations
-    Assessment period management
-    Grade aggregation
-
-Phase 3:
-
-    Cumulative grade calculations
-    Report generation
-    Performance analytics
-
-    Error Handling:
-
-    Validate grade entries against assessment criteria
-    Handle missing grades in calculations
-    Manage assessment period conflicts
-    Track grade modification history
-
-    Performance Considerations:
-
-    Optimize grade calculations
-    Cache frequently accessed grade data
-    Batch process cumulative calculations
-    Index critical grade lookup fields
-
-This implementation approach ensures:
-
-    Seamless integration with existing assessment systems
-    Flexible subject-wise grading
-    Accurate cumulative grade calculations
-    Scalable grade management
-    Consistent data inheritance
-    Maintainable codebase
-
-The system will provide a comprehensive grading solution that aligns with the educational institution's assessment requirements while maintaining data integrity and performance.
-
-Based on the provided code and requirements, here's a comprehensive analysis of what's implemented and what needs to be done:
-
-Based on the provided code and requirements analysis, here's a detailed breakdown of the necessary changes and implementations needed:
-
-### 1. Database Schema Updates
-
-```prisma
-// Add new tables to schema.prisma
-
-model GradeBook {
-  id              String   @id @default(cuid())
-  classId         String   @unique
-  class           Class    @relation(fields: [classId], references: [id])
-  assessmentSystem AssessmentSystem @relation(fields: [assessmentSystemId], references: [id])
-  assessmentSystemId String
-  subjectRecords  SubjectGradeRecord[]
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-}
-
-model SubjectGradeRecord {
-  id          String   @id @default(cuid())
-  gradeBookId String
-  gradeBook   GradeBook @relation(fields: [gradeBookId], references: [id])
-  subjectId   String
-  termGrades  Json     // Stores Map<string, TermGrade>
-  assessmentPeriodGrades Json // Stores Map<string, AssessmentPeriodGrade>
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model GradeHistory {
-  id          String   @id @default(cuid())
-  studentId   String
-  subjectId   String
-  gradeValue  Float
-  oldValue    Float?
-  modifiedBy  String
-  modifiedAt  DateTime @default(now())
-  reason      String?
+You're absolutely right - let me outline a clearer structure that shows how class groups and subjects at the institute level, along with their associated curriculum, are inherited by classes at the campus level:
+
+# Revised Hierarchical Structure
+
+```
+Institute Level
+└── Programs
+    └── Class Groups
+        ├── Subjects
+        │   ├── Curriculum
+        │   │   ├── Nodes (Chapters/Topics)
+        │   │   ├── Resources
+        │   │   └── Activities
+        │   └── Assessment Configuration
+        └── Term Structure
+
+Campus Level
+└── Classes (Inherits from Institute Class Groups)
+    ├── Inherited Components:
+    │   ├── Subjects with Curriculum
+    │   ├── Assessment Systems
+    │   └── Term Structures
+    └── Campus-specific:
+        ├── Students
+        ├── Teachers
+        └── Gradebooks
+```
+
+# Implementation Flow
+
+## 1. Institute Level Configuration
+
+### A. Class Group Setup
+```
+Class Group Creation
+├── Basic Details
+│   ├── Name
+│   ├── Description
+│   └── Program Association
+└── Subject Assignment
+    ├── Subject List
+    └── Teacher Templates
+```
+
+### B. Subject Configuration
+```
+Subject Setup
+├── Basic Information
+│   ├── Name
+│   ├── Code
+│   └── Description
+├── Curriculum Structure
+│   ├── Chapters/Topics
+│   ├── Resources
+│   └── Activities (Including H5P)
+└── Assessment Configuration
+    ├── Grading Schema
+    └── Evaluation Criteria
+```
+
+## 2. Campus Level Implementation
+
+### A. Class Creation
+```
+Class Setup
+├── Select Program & Class Group
+│   └── Automatic Inheritance of:
+      ├── Subjects
+      ├── Curriculum
+      └── Assessment Configuration
+├── Local Configuration
+├── ├── campus 
+│   ├── Class Name/Section
+│   ├── Capacity
+│   └── Schedule
+└── Resource Assignment
+    ├── Teachers
+    └── Students
+```
+
+### B. Inheritance Management
+```
+Inherited Components
+├── Subjects
+│   ├── Complete Curriculum
+│   ├── Resources
+│   └── Activities
+├── Assessment Systems
+│   ├── Grading Schemas
+│   └── Evaluation Criteria
+└── Term Structures
+    └── Academic Calendar
+```
+
+## 3. Data Structure
+
+### A. Class Group Schema
+```typescript
+interface ClassGroup {
+  id: string;
+  name: string;
+  programId: string;
+  subjects: Subject[];
+  assessmentConfig: AssessmentConfig;
+  termStructure: TermStructure;
 }
 ```
 
-### 2. Core Services Implementation
-
-#### 2.1 GradeBookService
+### B. Class Schema
 ```typescript
-// src/server/services/GradeBookService.ts
-
-export class GradeBookService {
-  constructor(
-    private db: PrismaClient,
-    private assessmentService: AssessmentService,
-    private termService: TermManagementService
-  ) {}
-
-  async initializeGradeBook(classId: string): Promise<void> {
-    const classData = await this.db.class.findUnique({
-      where: { id: classId },
-      include: {
-        classGroup: {
-          include: {
-            program: {
-              include: {
-                assessmentSystem: true
-              }
-            }
-          }
-        }
-      }
-    });
-
-    // Implement inheritance logic
-    const assessmentSystem = await this.resolveAssessmentSystem(classData);
-    
-    await this.db.gradeBook.create({
-      data: {
-        classId,
-        assessmentSystemId: assessmentSystem.id,
-        // Initialize other required fields
-      }
-    });
-  }
-
-  private async resolveAssessmentSystem(classData: any): Promise<AssessmentSystem> {
-    // Implement assessment system inheritance logic
-    // Program -> ClassGroup -> Class -> Subject
-  }
-
-  // Add other required methods
+interface Class {
+  id: string;
+  name: string;
+  classGroupId: string;  // Reference to institute level class group
+  campusId: string;
+  subjects: InheritedSubject[];
+  teachers: TeacherAssignment[];
+  students: StudentEnrollment[];
+  gradebook: Gradebook;
 }
 ```
 
-#### 2.2 SubjectGradeManager
-```typescript
-// src/server/services/SubjectGradeManager.ts
+## 4. Key Considerations
 
-export class SubjectGradeManager {
-  constructor(private db: PrismaClient) {}
+1. **Inheritance Flow**
+   - Class groups and subjects are defined at institute level
+   - Classes at campus level inherit complete structure
+   - Local modifications are tracked separately
 
-  async calculateSubjectAverage(subjectId: string, termId: string): Promise<SubjectGrade> {
-    const grades = await this.db.assessmentSubmission.findMany({
-      where: {
-        subject: { id: subjectId },
-        term: { id: termId }
-      }
-    });
+2. **Curriculum Management**
+   - Central curriculum management at institute level
+   - Consistent delivery across all campuses
+   - Campus-specific tracking of progress
 
-    // Implement grade calculation logic
-    return this.processGrades(grades);
-  }
+3. **Assessment Structure**
+   - Standardized assessment criteria from institute
+   - Campus-level implementation and grading
+   - Unified reporting structure
 
-  // Add other required methods
-}
+4. **Teacher Assignment**
+   - Template from institute level
+   - Actual assignment at campus level
+   - Subject-specific permissions
+
+## 5. Implementation Benefits
+
+1. **Standardization**
+   - Consistent curriculum across campuses
+   - Unified assessment approach
+   - Standardized quality control
+
+2. **Efficient Management**
+   - Centralized updates
+   - Reduced redundancy
+   - Simplified administration
+
+3. **Flexibility**
+   - Campus-specific implementations
+   - Local resource management
+   - Customized scheduling
+
+I'll outline how timetable and attendance management should be structured at the campus level while maintaining inheritance from the institute level.
+
+# Updated Campus Management Structure
+
+## 1. Core Hierarchy
+```
+Institute Level
+└── Programs
+    └── Class Groups
+        ├── Subjects
+        │   ├── Curriculum
+        │   └── Assessment Configuration
+        └── Term Structure
+
+Campus Level
+└── Classes (Inherits from Institute Class Groups)
+    ├── Timetable Management
+    │   ├── Period Configuration
+    │   ├── Break Times
+    │   └── Teacher Assignments
+    └── Attendance Management
+        ├── Daily Attendance
+        ├── Subject-wise Attendance
+        └── Reports Generation
 ```
 
-### 3. API Routes Implementation
+## 2. Timetable Management at Campus Level
 
+### A. Structure
 ```typescript
-// src/pages/api/gradebook/[classId].ts
-
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { classId } = req.query;
-  const gradeBookService = new GradeBookService(prisma);
-
-  switch (req.method) {
-    case 'GET':
-      const gradeBook = await gradeBookService.getGradeBook(classId as string);
-      return res.status(200).json(gradeBook);
-
-    case 'POST':
-      const newGrade = await gradeBookService.recordGrade(req.body);
-      return res.status(201).json(newGrade);
-
-    // Add other methods
+interface CampusTimetable {
+  classId: string;
+  classGroupId: string;  // Reference to institute level
+  academicCalendarId: string;
+  termId: string;
+  schedule: {
+    startTime: string;
+    endTime: string;
+    breakTimes: BreakTime[];
+    periods: Period[];
   }
 }
-```
 
-### 4. Frontend Components Updates
-
-#### 4.1 GradeBook Component
-```typescript
-// src/components/dashboard/gradebook/GradeBookComponent.tsx
-
-export const GradeBookComponent: React.FC<{ classId: string }> = ({ classId }) => {
-  const [activeSubject, setActiveSubject] = useState<string>();
-  const [activeTerm, setActiveTerm] = useState<string>();
-
-  const { data: gradeBook, isLoading } = api.gradebook.getGradeBook.useQuery({ classId });
-
-  // Add component logic
-};
-```
-
-### 5. Performance Optimization Implementation
-
-```typescript
-// src/server/services/CacheService.ts
-
-export class GradeBookCacheService {
-  private cache: Map<string, any> = new Map();
-
-  async getCachedGradeBook(classId: string): Promise<GradeBook | null> {
-    const cacheKey = `gradebook:${classId}`;
-    return this.cache.get(cacheKey) || null;
-  }
-
-  // Add other caching methods
+interface Period {
+  startTime: string;
+  endTime: string;
+  subjectId: string;  // Reference to institute level subject
+  teacherId: string;  // Campus level teacher
+  daysOfWeek: number[];
+  classroomId: string;
 }
 ```
 
-### 6. Required Configuration Updates
+### B. Key Features
+1. **Class-Specific Timetables**
+   ```typescript
+   - Inherit subjects from institute class groups
+   - Configure periods for each class
+   - Assign campus teachers to subjects
+   - Manage break times
+   ```
 
+2. **Conflict Management**
+   ```typescript
+   - Teacher availability checks
+   - Classroom allocation
+   - Break time coordination
+   - Period overlap prevention
+   ```
+
+## 3. Attendance Management at Campus Level
+
+### A. Structure
 ```typescript
-// src/config/grading.ts
+interface CampusAttendance {
+  classId: string;
+  date: Date;
+  type: AttendanceType;  // DAILY | SUBJECT_WISE
+  records: AttendanceRecord[];
+}
 
-export const gradingConfig = {
-  caching: {
-    enabled: true,
-    ttl: 3600, // 1 hour
-    maxSize: 1000 // Maximum cache entries
-  },
-  validation: {
-    maxGrade: 100,
-    minGrade: 0,
-    allowDecimals: true,
-    decimalPlaces: 2
-  },
-  batch: {
-    size: 100,
-    retryAttempts: 3
-  }
-};
+interface AttendanceRecord {
+  studentId: string;
+  status: AttendanceStatus;
+  subjectId?: string;  // For subject-wise attendance
+  notes?: string;
+}
 ```
 
-### 7. Migration Steps
+### B. Key Features
+1. **Attendance Tracking Modes**
+   ```typescript
+   - Daily class attendance
+   - Subject-wise attendance
+   - Multiple status options (PRESENT, ABSENT, LATE, EXCUSED)
+   ```
 
-1. Create database migrations:
-```bash
-npx prisma migrate dev --name add_gradebook_tables
+2. **Teacher Access Levels**
+   ```typescript
+   - Class teachers: Full class attendance management
+   - Subject teachers: Subject-specific attendance
+   ```
+
+## 4. Implementation Flow
+
+### A. Timetable Creation
+```typescript
+1. Select Class Group (Institute Level)
+   └── Inherit:
+       ├── Subjects
+       └── Term Structure
+
+2. Configure Campus Timetable
+   ├── Set daily schedule
+   ├── Define break times
+   ├── Create periods
+   └── Assign teachers
+
+3. Validate Schedule
+   ├── Check teacher conflicts
+   ├── Verify classroom availability
+   └── Ensure subject coverage
 ```
 
-2. Update existing data:
+### B. Attendance Management
 ```typescript
-// src/scripts/migrateGradeData.ts
+1. Class Setup
+   ├── Inherit class structure from institute
+   └── Configure attendance tracking mode
 
-async function migrateExistingGrades() {
-  const classes = await prisma.class.findMany();
-  
-  for (const class of classes) {
-    await gradeBookService.initializeGradeBook(class.id);
-    // Migrate existing grades
+2. Daily Operations
+   ├── Record attendance
+   │   ├── Class-level (Class teacher)
+   │   └── Subject-level (Subject teacher)
+   └── Generate reports
+```
+
+## 5. Access Control
+
+```typescript
+interface CampusAccess {
+  campusId: string;
+  roles: {
+    CAMPUS_ADMIN: {
+      permissions: ['MANAGE_TIMETABLE', 'VIEW_ALL_ATTENDANCE']
+    },
+    CLASS_TEACHER: {
+      permissions: ['MANAGE_CLASS_ATTENDANCE', 'VIEW_TIMETABLE']
+    },
+    SUBJECT_TEACHER: {
+      permissions: ['MANAGE_SUBJECT_ATTENDANCE', 'VIEW_SUBJECT_TIMETABLE']
+    }
   }
 }
 ```
 
-### Implementation Timeline
+## 6. Data Management
 
-1. **Week 1-2: Core Infrastructure**
-- Database schema updates
-- Basic service implementation
-- API route setup
+### A. Timetable Data
+```typescript
+- Store campus-specific timetables
+- Maintain teacher assignments
+- Track classroom allocations
+```
 
-2. **Week 3-4: Feature Implementation**
-- Grade calculation logic
-- Term grade processing
-- Assessment system inheritance
+### B. Attendance Data
+```typescript
+- Daily attendance records
+- Subject-wise attendance
+- Attendance reports and analytics
+```
 
-3. **Week 5-6: Optimization & Testing**
-- Caching implementation
-- Performance optimization
-- Testing and bug fixes
+This structure ensures that:
+1. Timetables are managed efficiently at the campus level
+2. Attendance tracking is flexible and role-appropriate
+3. Data inheritance from institute level is maintained
+4. Campus-specific customizations are supported
+5. Clear access control is implemented
 
-4. **Week 7-8: Frontend & Integration**
-- UI component updates
-- Integration testing
-- Documentation
-
-This implementation plan provides a structured approach to completing the grading system while ensuring scalability and maintainability.
+The system maintains centralized control at the institute level while allowing for efficient campus-level operations in timetable and attendance management.

@@ -2,9 +2,14 @@ import { useState } from "react";
 import { api } from "@/utils/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { NovelEditor } from "@/components/ui/novel-editor";
 import type { CurriculumResourceType } from ".prisma/client";
+import { ResourceUpload } from "@/components/dashboard/curriculum/resource-upload";
+import { ResourcePreview } from "@/components/dashboard/curriculum/resource-preview";
+import { FileInfo, ResourceFileInfo } from "@/types/curriculum";
+
+
+
 
 
 import {
@@ -39,6 +44,7 @@ const ResourceForm: React.FC<ResourceFormProps> = ({ nodeId, onSuccess, onCancel
 	const [type, setType] = useState<CurriculumResourceType>("READING");
 	const [content, setContent] = useState("");
 	const [error, setError] = useState("");
+	const [fileInfo, setFileInfo] = useState<FileInfo | null>(null);
 	const utils = api.useContext();
 
 	const createResource = api.curriculum.createResource.useMutation({
@@ -79,6 +85,13 @@ const ResourceForm: React.FC<ResourceFormProps> = ({ nodeId, onSuccess, onCancel
 				type,
 				content: content.trim(),
 				nodeId,
+				fileInfo: fileInfo ? {
+					size: fileInfo.size,
+					mimeType: fileInfo.mimeType,
+					createdAt: new Date(fileInfo.createdAt),
+					updatedAt: new Date(fileInfo.updatedAt),
+					publicUrl: fileInfo.publicUrl
+				} as ResourceFileInfo : undefined
 			};
 			console.log('Submitting resource:', data);
 			await createResource.mutateAsync(data);
@@ -102,25 +115,45 @@ const ResourceForm: React.FC<ResourceFormProps> = ({ nodeId, onSuccess, onCancel
 					</div>
 				);
 
-
 			case "VIDEO":
+				return (
+					<div className="space-y-4">
+						<ResourceUpload
+							type="VIDEO"
+							onUploadComplete={(url, info: FileInfo) => {
+								setContent(url);
+								setFileInfo(info);
+							}}
+
+						/>
+						{content && <ResourcePreview type="VIDEO" url={content} />}
+					</div>
+				);
+
+			case "DOCUMENT":
+				return (
+					<div className="space-y-4">
+						<ResourceUpload
+							type="DOCUMENT"
+							onUploadComplete={(url, info: FileInfo) => {
+								setContent(url);
+								setFileInfo(info);
+							}}
+
+						/>
+						{content && <ResourcePreview type="DOCUMENT" url={content} mimeType={fileInfo?.mimeType} />}
+					</div>
+				);
+
 			case "URL":
 				return (
 					<Input
 						value={content}
 						onChange={(e) => setContent(e.target.value)}
-						placeholder={`Enter ${type.toLowerCase()} URL`}
+						placeholder="Enter URL"
 					/>
 				);
-			case "DOCUMENT":
-				return (
-					<Textarea
-						value={content}
-						onChange={(e) => setContent(e.target.value)}
-						placeholder="Document content"
-						rows={4}
-					/>
-				);
+
 			default:
 				return null;
 		}
@@ -284,6 +317,12 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({ nodeId }) => {
 									<div 
 										className="prose prose-lg max-w-none dark:prose-invert prose-headings:mt-4 prose-headings:mb-2 prose-p:my-2 prose-img:my-4 overflow-x-auto"
 										dangerouslySetInnerHTML={{ __html: resource.content }}
+									/>
+								) : resource.type === "VIDEO" || resource.type === "DOCUMENT" ? (
+									<ResourcePreview 
+										type={resource.type} 
+										url={resource.content} 
+										mimeType={(resource.fileInfo as unknown as FileInfo)?.mimeType}
 									/>
 								) : (
 									<CardDescription className="text-sm">

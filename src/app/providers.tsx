@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "sonner";
 import { loggerLink, unstable_httpBatchStreamLink } from '@trpc/client';
 import { ThemeProvider } from "@/components/theme-provider";
 import { SessionProvider } from "next-auth/react";
@@ -71,6 +72,7 @@ export function Providers({
             enableSystem
             disableTransitionOnChange
           >
+            <Toaster richColors closeButton position="top-right" />
             {children}
           </ThemeProvider>
         </SessionProvider>

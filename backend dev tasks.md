@@ -1,240 +1,226 @@
-# Backend Development Tasks
+Based on the provided codebase and requirements, I'll suggest a more aligned implementation that minimizes conflicts with the existing code. Here's a refined approach:
 
-This document outlines the detailed backend development tasks required for the AIVY AI LXP project, based on the requirements specified in `README.md` and `requirements.md`.
+1. First, let's extend the existing CurriculumNode interface in `/src/types/curriculum.ts`:
 
-## Core Functionality & Data Management
+```typescript
+// Add new interfaces for context types
+export interface NodeLearningContext {
+  objectives?: string[];
+  duration?: string;
+  prerequisites?: string[];
+  keyTerms?: string[];
+  outcomes?: string[];
+}
 
-*   **Database Setup:**
-    *   **Logic:** Define and implement the database schema using Prisma ORM based on the entities and relationships described in `requirements.md`. This involves creating models for Programs, Class Groups, Classes, Subjects, Teachers, Program Coordinators, Students, Activities, Timetables, Classrooms, Notifications, and Messages.
-    *   **Task Details:**
-        *   Analyze the entity relationships in `requirements.md` to design the database schema. completed
-        *   Create Prisma schema definitions in `prisma/schema.prisma`.completed
-        *   Define fields, data types, and relationships between models.completed
-        *   Implement database migrations using Prisma Migrate.completed
-        *   Consider indexing strategies for performance optimization.completed
-*   **API Endpoints Development:**
-    *   **Logic:** Develop RESTful API endpoints using Next.js API routes to expose backend functionalities to the frontend. Each entity should have endpoints for CRUD operations.
-    *   **Task Details:**
-        *   Define API routes under `src/app/api/`.
-        *   Implement handlers for GET, POST, PUT, and DELETE requests for each entity.
-        *   Implement request validation and error handling for each endpoint.
-        *   Ensure proper authentication and authorization for each endpoint.
-*   **Data Model Implementation:**
-    *   **Logic:** Implement the backend data models using TypeScript classes or interfaces, reflecting the database schema defined in Prisma. These models will be used for data transfer and manipulation within the backend.
-    *   **Task Details:**
-        *   Create TypeScript types/interfaces in `src/types/` to represent the data structures for each entity.
-        *   Ensure consistency between Prisma schema and backend data models.
-*   **Relationship Management:**
-    *   **Logic:** Implement the relationships between entities in the backend logic, ensuring data consistency and integrity when performing operations across related entities. Utilize Prisma's relationship features.
-    *   **Task Details:**
-        *   Implement logic to handle operations that involve related entities (e.g., creating a class under a specific class group).
-        *   Utilize Prisma's `include` and `select` options for efficient data fetching.
-*   **Data Validation:**
-    *   **Logic:** Implement robust data validation on the backend to ensure that incoming data meets the defined requirements and constraints, preventing invalid data from being stored in the database.
-    *   **Task Details:**
-        *   Use libraries like Zod or Yup for schema validation in API endpoints.
-        *   Validate request bodies and parameters.
-        *   Implement custom validation logic as needed.
+export interface NodeResourceContext {
+  materials?: {
+    primary?: string[];
+    supplementary?: string[];
+  };
+  references?: string[];
+}
 
-## AI Integration
+export interface NodeAssessmentContext {
+  methods?: string[];
+  criteria?: string[];
+  weightage?: number;
+}
 
-*   **Vercel AI SDK Integration:**
-    *   **Logic:** Integrate the Vercel AI SDK into the backend to build conversational AI interfaces and handle streaming responses. This might involve creating API routes that act as proxies to AI models or implementing custom logic using the SDK.
-    *   **Task Details:**
-        *   Install the Vercel AI SDK.
-        *   Explore the SDK documentation and examples.
-        *   Implement API routes to interact with AI models for conversational interfaces.
-        *   Handle streaming responses to the frontend.
-*   **Google Generative AI (Gemini) Integration:**
-    *   **Logic:** Integrate with Google's Gemini API for text and potentially image generation. This involves making API calls to Gemini from the backend and handling the responses.
-    *   **Task Details:**
-        *   Obtain necessary API keys and credentials for Google Generative AI.
-        *   Install the relevant Google Cloud client libraries.
-        *   Create backend services or utility functions to interact with the Gemini API for text generation (e.g., for activity drafts, summaries).
-        *   Implement error handling and response parsing for Gemini API calls.
-        *   Securely store and manage API keys.
-*   **Agentic Framework Integration (Langchain):**
-    *   **Logic:** Integrate an agentic framework like Langchain to orchestrate and manage AI agents responsible for specific tasks within the platform. This involves setting up the framework and defining agents for various functionalities.
-    *   **Task Details:**
-        *   Choose an appropriate agentic framework (e.g., Langchain).
-        *   Memory layer implimentation using mem0 memory layer
-        *   Install the framework and its dependencies.
-        *   Define AI agents for tasks like intelligent scheduling, content curation, and personalized learning path creation.
-        *   Implement the logic for agent orchestration and communication.
-        *   Integrate agents with the core backend functionalities.
-*   **AI Data Handling:**
-    *   **Logic:** Implement secure and privacy-respecting methods for handling user data used for AI analysis. This includes anonymization techniques and adherence to privacy regulations.
-    *   **Task Details:**
-        *   Identify the user data that will be used for AI analysis.
-        *   Implement data anonymization or pseudonymization techniques.
-        *   Ensure compliance with data privacy policies and regulations.
+// Update CurriculumNode interface
+export interface CurriculumNode {
+  id: string;
+  title: string;
+  description?: string;
+  type: NodeType;
+  parentId?: string;
+  order: number;
+  subjectId: string;
+  
+  // Add new optional context fields
+  learningContext?: NodeLearningContext;
+  resourceContext?: NodeResourceContext;
+  assessmentContext?: NodeAssessmentContext;
+  
+  // Existing fields
+  resources: CurriculumResource[];
+  activities: CurriculumActivity[];
+  children?: CurriculumNode[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
 
-## Business Logic & Features
+2. Update the NodeEditor component to include the new fields while maintaining compatibility:
 
-*(Details for each feature will follow a similar structure: Logic and Task Details)*
+```typescript
+// /src/components/dashboard/roles/super-admin/subject/curriculum/NodeEditor.tsx
 
-*   **Academic Calendar Management Logic:**
-    *   **Logic:** Implement backend logic for managing academic calendars, including creating, updating, deleting events and terms. Implement logic for recurring events and linking terms to academic programs.
-    *   **Task Details:**
-        *   Implement API endpoints for managing calendar events and terms.
-        *   Implement logic for handling recurring events.
-        *   Implement logic for associating terms with programs.
-*   **Program Management Logic:**
-    *   **Logic:** Implement backend logic for managing programs, including creating, updating, and deleting programs. Implement logic for assigning program coordinators.
-    *   **Task Details:**
-        *   Implement API endpoints for managing programs.
-        *   Implement logic for assigning and managing program coordinators.
-*   **Class Group Management Logic:**
-    *   **Logic:** Implement backend logic for managing class groups, including creating, updating, and deleting class groups. Implement logic for associating class groups with programs and subjects.
-    *   **Task Details:**
-        *   Implement API endpoints for managing class groups.
-        *   Implement logic for associating class groups with programs and subjects.
-*   **Class Management Logic:**
-    *   **Logic:** Implement backend logic for managing classes, including creating, updating, and deleting classes. Implement logic for assigning students and teachers to classes.
-    *   **Task Details:**
-        *   Implement API endpoints for managing classes.
-        *   Implement logic for assigning and managing students and teachers in classes.
-*   **Subject Management Logic:**
-    *   **Logic:** Implement backend logic for managing subjects, including creating, updating, and deleting subjects. Implement logic for associating subjects with class groups and teachers.
-    *   **Task Details:**
-        *   Implement API endpoints for managing subjects.
-        *   Implement logic for associating subjects with class groups and teachers.
-*   **Teacher Management Logic:**
-    *   **Logic:** Implement backend logic for managing teacher information, including creating, updating, and deleting teacher profiles. Implement logic for assigning teachers to subjects and classes.
-    *   **Task Details:**
-        *   Implement API endpoints for managing teacher information.
-        *   Implement logic for assigning teachers to subjects and classes.
-*   **Program Coordinator Management Logic:**
-    *   **Logic:** Implement backend logic for managing program coordinator information, including creating, updating, and deleting coordinator profiles. Implement logic for assigning coordinators to programs.
-    *   **Task Details:**
-        *   Implement API endpoints for managing program coordinator information.
-        *   Implement logic for assigning coordinators to programs.
-*   **Student Management Logic:**
-    *   **Logic:** Implement backend logic for managing student information, including creating, updating, and deleting student profiles. Implement logic for enrolling students in classes.
-    *   **Task Details:**
-        *   Implement API endpoints for managing student information.
-        *   Implement logic for enrolling students in classes.
-*   **Class Activities Management Logic:**
-    *   **Logic:** Implement backend logic for creating, managing, and tracking class activities (assignments, quizzes, assessments). Implement logic for associating activities with class groups or classes.
-    *   **Task Details:**
-        *   Implement API endpoints for managing class activities.
-        *   Implement logic for associating activities with class groups or classes.
-        *   Implement logic for tracking student submissions and grading.
-*   **Enhanced Student Profile Logic:**
-    *   **Logic:** Implement backend logic to aggregate and manage student data from various sources to create a comprehensive student profile. This includes performance metrics, attendance, and activity participation.
-    *   **Task Details:**
-        *   Implement logic to fetch and aggregate student data from different entities.
-        *   Create API endpoints to retrieve enhanced student profile information.
-*   **Timetable Management Logic:**
-    *   **Logic:** Implement backend logic for creating and managing timetables at the class group level, with inheritance by classes. Implement conflict detection and resolution logic.
-    *   **Task Details:**
-        *   Implement API endpoints for managing timetables.
-        *   Implement logic for defining periods and assigning subjects and teachers.
-        *   Implement conflict detection and resolution mechanisms.
-*   **Classroom Management Logic:**
-    *   **Logic:** Implement backend logic for managing classrooms and their resources. Implement logic for assigning classrooms to specific classes or periods.
-    *   **Task Details:**
-        *   Implement API endpoints for managing classrooms and resources.
-        *   Implement logic for assigning classrooms to classes or periods.
-*   **Notification System Logic:**
-    *   **Logic:** Implement a notification system with different notification types, delivery mechanisms (in-app, email, SMS), and hierarchical communication capabilities based on user roles and entity relationships.
-    *   **Task Details:**
-        *   Design the notification data model.
-        *   Implement API endpoints for creating and managing notifications.
-        *   Implement logic for routing notifications based on roles and relationships.
-        *   Integrate with email and SMS services (if required).
-*   **Messaging System Logic:**
-    *   **Logic:** Implement a comprehensive messaging system facilitating real-time and asynchronous communication between users.
-    *   **Task Details:**
-        *   Design the messaging data model (messages, threads, participants).
-        *   Implement API endpoints for sending and receiving messages.
-        *   Implement logic for managing message threads and participants.
-        *   Implement search functionality and delivery/read receipts.
+export const NodeEditor: React.FC<NodeEditorProps> = ({ node, onClose }) => {
+  // Existing state
+  const [title, setTitle] = useState(node.title);
+  const [description, setDescription] = useState(node.description || "");
+  const [type, setType] = useState<NodeType>(node.type);
+  const [parentId, setParentId] = useState<string | undefined>(node.parentId);
 
-## Security & Permissions
+  // New state for contexts
+  const [learningContext, setLearningContext] = useState<NodeLearningContext>(
+    node.learningContext || {}
+  );
+  const [resourceContext, setResourceContext] = useState<NodeResourceContext>(
+    node.resourceContext || {}
+  );
+  const [assessmentContext, setAssessmentContext] = useState<NodeAssessmentContext>(
+    node.assessmentContext || {}
+  );
 
-*   **Authentication and Authorization:**
-    *   **Logic:** Implement secure authentication and authorization mechanisms to protect API endpoints and ensure users only access resources they are permitted to.
-    *   **Task Details:**
-        *   Choose an authentication strategy (e.g., JWT).
-        *   Implement user registration and login functionality.
-        *   Implement middleware to protect API endpoints.
-        *   Implement Role-Based Access Control (RBAC) based on user roles.
-*   **Secure API Key Management:**
-    *   **Logic:** Implement secure storage and retrieval of API keys for external services to prevent unauthorized access.
-    *   **Task Details:**
-        *   Utilize environment variables or a secrets management system for storing API keys.
-        *   Avoid hardcoding API keys in the codebase.
-*   **Input Validation:**
-    *   **Logic:** Implement robust backend input validation to prevent common security vulnerabilities like SQL injection and cross-site scripting.
-    *   **Task Details:**
-        *   Validate all user inputs on the backend.
-        *   Sanitize inputs as necessary.
+  // Update mutation to include new fields
+  const updateNode = api.curriculum.updateNode.useMutation({
+    onSuccess: () => {
+      utils.curriculum.getNodes.invalidate();
+      onClose?.();
+    }
+  });
 
-## Non-Functional Requirements
+  const handleSave = async () => {
+    try {
+      await updateNode.mutateAsync({
+        id: node.id,
+        title,
+        description,
+        type,
+        parentId,
+        learningContext,
+        resourceContext,
+        assessmentContext
+      });
+    } catch (error) {
+      console.error("Failed to update node:", error);
+    }
+  };
 
-*   **Performance Optimization:**
-    *   **Logic:** Implement strategies to optimize backend performance, ensuring responsiveness and efficient resource utilization.
-    *   **Task Details:**
-        *   Implement database indexing for frequently queried fields.
-        *   Optimize database queries.
-        *   Implement caching mechanisms where appropriate.
-*   **Scalability:**
-    *   **Logic:** Design the backend architecture to be scalable to handle increasing user loads and data volumes.
-    *   **Task Details:**
-        *   Consider using a horizontally scalable architecture.
-        *   Optimize database performance for scale.
-*   **Error Handling:**
-    *   **Logic:** Implement consistent error handling across the backend to provide informative error messages and prevent application crashes.
-    *   **Task Details:**
-        *   Use try-catch blocks to handle exceptions.
-        *   Implement centralized error handling middleware.
-        *   Log errors for debugging and monitoring.
-*   **Logging:**
-    *   **Logic:** Implement comprehensive logging to track application behavior, monitor performance, and debug issues.
-    *   **Task Details:**
-        *   Choose a logging library (e.g., Winston, Bunyan).
-        *   Implement logging middleware.
-        *   Log different levels of information (debug, info, warn, error).
-        *   Configure separate log levels for development and production.
+  return (
+    <div className="space-y-6">
+      {/* Existing fields */}
+      <div className="space-y-4">
+        {/* Basic Information */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Title</label>
+          <Input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Enter node title"
+          />
+        </div>
 
-## Integrations
+        {/* Learning Context Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Learning Context</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Learning Objectives</label>
+              <Textarea
+                value={learningContext.objectives?.join('\n') || ''}
+                onChange={(e) => setLearningContext({
+                  ...learningContext,
+                  objectives: e.target.value.split('\n').filter(Boolean)
+                })}
+                placeholder="Enter objectives (one per line)"
+              />
+            </div>
+            {/* Add similar fields for other learning context items */}
+          </CardContent>
+        </Card>
 
-*(Details for each integration will follow a similar structure: Logic and Task Details)*
+        {/* Resource Context Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Resources</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Add resource context fields */}
+          </CardContent>
+        </Card>
 
-*   **Vercel AI SDK Integration (Backend):**
-    *   **Logic:** Implement the backend components required for integrating with the Vercel AI SDK.
-    *   **Task Details:**
-        *   Refer to the Vercel AI SDK documentation for backend integration guidelines.
-*   **Google Generative AI (Gemini) APIs Integration (Backend):**
-    *   **Logic:** Implement the backend components required for integrating with the Google Generative AI APIs.
-    *   **Task Details:**
-        *   Refer to the Google Generative AI API documentation for integration guidelines.
-*   **Agentic Framework (e.g., Langchain) Integration (Backend):**
-    *   **Logic:** Implement the backend components required for integrating with the chosen agentic framework.
-    *   **Task Details:**
-        *   Refer to the framework's documentation for integration guidelines.
-*   **SIS Integration:**
-    *   **Logic:** Implement backend logic to integrate with the school's Student Information System (if applicable) to synchronize student and academic data.
-    *   **Task Details:**
-        *   Identify the SIS API or data export mechanisms.
-        *   Implement API clients or data connectors.
-        *   Implement logic for data synchronization.
-*   **LTI Integration:**
-    *   **Logic:** Implement backend logic to support Learning Tools Interoperability (LTI) standards, allowing integration with other learning platforms.
-    *   **Task Details:**
-        *   Implement LTI tool provider functionality.
-        *   Handle LTI launch requests and data exchange.
-*   **Video Conferencing Integration:**
-    *   **Logic:** Implement backend logic to integrate with video conferencing platforms (e.g., Zoom, Google Meet) to enable features like scheduling and launching meetings.
-    *   **Task Details:**
-        *   Identify the video conferencing platform's API.
-        *   Implement API clients for scheduling and managing meetings.
-*   **Payment Gateway Integration:**
-    *   **Logic:** Implement backend logic to integrate with a payment gateway (if applicable) for handling online payments for fees or other services.
-    *   **Task Details:**
-        *   Choose a payment gateway.
-        *   Implement the gateway's API for processing payments.
-        *   Handle payment confirmations and error scenarios.
+        {/* Assessment Context Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Assessment</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Add assessment context fields */}
+          </CardContent>
+        </Card>
+      </div>
 
-This detailed breakdown provides a comprehensive list of backend development tasks with specific logic and requirements to guide the development process.
+      {/* Action buttons */}
+      <div className="flex gap-4 pt-4">
+        <Button 
+          variant="outline"
+          onClick={handleCancel}
+          className="flex-1"
+        >
+          Cancel
+        </Button>
+        <Button 
+          onClick={handleSave} 
+          disabled={updateNode.status === 'pending'}
+          className="flex-1"
+        >
+          Save Changes
+        </Button>
+      </div>
+    </div>
+  );
+};
+```
+
+3. Update the API endpoint schema (if using tRPC):
+
+```typescript
+// /src/server/api/routers/curriculum.ts
+
+export const curriculumRouter = createTRPCRouter({
+  updateNode: protectedProcedure
+    .input(z.object({
+      id: z.string(),
+      title: z.string(),
+      description: z.string().optional(),
+      type: z.enum(['CHAPTER', 'TOPIC', 'SUBTOPIC']),
+      parentId: z.string().optional(),
+      learningContext: z.object({
+        objectives: z.array(z.string()).optional(),
+        duration: z.string().optional(),
+        prerequisites: z.array(z.string()).optional(),
+        keyTerms: z.array(z.string()).optional(),
+        outcomes: z.array(z.string()).optional(),
+      }).optional(),
+      resourceContext: z.object({
+        materials: z.object({
+          primary: z.array(z.string()).optional(),
+          supplementary: z.array(z.string()).optional(),
+        }).optional(),
+        references: z.array(z.string()).optional(),
+      }).optional(),
+      assessmentContext: z.object({
+        methods: z.array(z.string()).optional(),
+        criteria: z.array(z.string()).optional(),
+        weightage: z.number().optional(),
+      }).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Implementation
+    }),
+});
+```
+
+This implementation:
+- Maintains backward compatibility with existing code
+- Adds new fields as optional properties
+- Uses existing UI components and patterns
+- Follows the established type system
+- Keeps the existing tree structure intact
+- Allows gradual adoption of new fields
+
+The changes are modular and don't affect the existing functionality while providing the foundation for enhanced curriculum content management.
